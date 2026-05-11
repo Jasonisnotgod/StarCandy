@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>星糖大冒险 Star Candy Quest</title>
+<style>
+  :root{
+    --bg1:#ffe8f5;
+    --bg2:#dff2ff;
+    --bg3:#fff7d7;
+    --ink:#563a68;
+    --panel:rgba(255,255,255,.82);
+    --panel2:rgba(255,255,255,.96);
+    --accent:#ff6fb1;
+    --accent2:#7c5cff;
+    --good:#2fbf71;
+    --warn:#ffb020;
+    --bad:#ef476f;
+    --shadow:0 14px 35px rgba(76,46,110,.18);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family:"Trebuchet MS",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(circle at 12% 12%,rgba(255,255,255,.95) 0 8%,transparent 9%),
+      radial-gradient(circle at 87% 18%,rgba(255,255,255,.6) 0 7%,transparent 8%),
+      radial-gradient(circle at 30% 80%,rgba(255,255,255,.45) 0 8%,transparent 9%),
+      linear-gradient(135deg,var(--bg1),var(--bg2) 45%,var(--bg3));
+    overflow-x:hidden;
+  }
+  body:before,body:after{
+    content:"";
+    position:fixed;
+    inset:auto auto 6% -50px;
+    width:260px;height:260px;border-radius:50%;
+    background:radial-gradient(circle,rgba(255,255,255,.45),transparent 65%);
+    pointer-events:none;
+  }
+  body:after{inset:8% -80px auto auto;width:310px;height:310px}
+  button{font-family:inherit;color:inherit;border:none;cursor:pointer}
+  .hidden{display:none!important}
+  .app{width:min(1160px,100%);margin:0 auto;padding:14px;position:relative;z-index:1}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:900;font-size:24px;letter-spacing:.4px;text-shadow:0 3px 0 rgba(255,255,255,.8)}
+  .brand .logo{width:46px;height:46px;display:grid;place-items:center;border-radius:17px;background:linear-gradient(135deg,#fff,#ffe2f2);box-shadow:var(--shadow);font-size:27px;animation:floaty 3.5s ease-in-out infinite}
+  .pillrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+  .pill{background:var(--panel);border:1px solid rgba(255,255,255,.8);box-shadow:0 7px 18px rgba(76,46,110,.12);border-radius:999px;padding:8px 12px;font-weight:800;white-space:nowrap}
+  .btn{border-radius:16px;padding:10px 14px;font-weight:900;background:linear-gradient(135deg,#fff,#ffe4f3);box-shadow:0 8px 18px rgba(76,46,110,.16);transition:.15s transform,.15s filter}
+  .btn:hover{transform:translateY(-1px);filter:brightness(1.03)}
+  .btn.primary{background:linear-gradient(135deg,#ff79bd,#7c5cff);color:white;text-shadow:0 1px 1px rgba(0,0,0,.18)}
+  .btn.good{background:linear-gradient(135deg,#3bd184,#a8f0c9);color:#113d2a}
+  .btn.warn{background:linear-gradient(135deg,#ffd166,#fff2b6);color:#654800}
+  .btn.bad{background:linear-gradient(135deg,#ff5a88,#ffb3c9);color:white}
+  .layout{display:grid;grid-template-columns:260px 1fr 282px;gap:12px;align-items:start}
+  .panel{background:var(--panel);border:1px solid rgba(255,255,255,.7);box-shadow:var(--shadow);border-radius:24px;padding:14px;backdrop-filter:blur(12px)}
+  .panel h3{margin:0 0 10px;font-size:18px}.panel h4{margin:8px 0 6px}
+  .boardWrap{padding:14px;display:flex;flex-direction:column;align-items:center;gap:10px;position:relative}
+  .objectiveList{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;width:100%}
+  .objective{background:rgba(255,255,255,.86);border-radius:16px;padding:7px 10px;font-weight:900;box-shadow:0 6px 14px rgba(76,46,110,.10);border:1px solid rgba(255,255,255,.7)}
+  .objective.done{background:linear-gradient(135deg,#caffdc,#fff)}
+  .bossBar{width:100%;height:14px;background:rgba(255,255,255,.8);border-radius:999px;overflow:hidden;box-shadow:inset 0 2px 5px rgba(0,0,0,.08)}
+  .bossFill{height:100%;background:linear-gradient(90deg,#ff4d6d,#ffb703);width:100%;transition:.25s width}
+  .board{width:min(592px,92vw);aspect-ratio:1/1;display:grid;gap:6px;padding:8px;border-radius:28px;background:linear-gradient(135deg,rgba(255,255,255,.75),rgba(255,255,255,.30));box-shadow:inset 0 3px 12px rgba(255,255,255,.7),0 18px 38px rgba(76,46,110,.18);touch-action:none;position:relative}
+  .cell{position:relative;border-radius:18px;background:rgba(255,255,255,.66);display:grid;place-items:center;font-size:34px;box-shadow:inset 0 -4px 0 rgba(76,46,110,.08),0 5px 9px rgba(76,46,110,.10);transition:transform .12s,filter .12s,box-shadow .12s;overflow:hidden;user-select:none}
+  .cell:hover{transform:translateY(-1px) scale(1.02)}
+  .cell.selected{outline:4px solid #fff;box-shadow:0 0 0 5px #ff74bb,0 8px 14px rgba(76,46,110,.18)}
+  .cell.hint{animation:pulse 1s infinite}.cell.clearing{animation:pop .22s ease-out forwards}.cell.drop{animation:drop .23s ease-out}
+  .candy{position:relative;z-index:2;filter:drop-shadow(0 3px 2px rgba(0,0,0,.12));transform:translateZ(0)}
+  .specialBadge,.keyBadge,.blockerBadge{position:absolute;z-index:4;display:grid;place-items:center;font-size:15px;font-weight:900;text-shadow:0 1px 1px white}
+  .specialBadge{right:3px;bottom:3px;min-width:24px;height:24px;border-radius:999px;background:rgba(255,255,255,.8);box-shadow:0 2px 5px rgba(0,0,0,.15)}
+  .keyBadge{left:3px;top:3px;width:24px;height:24px;border-radius:50%;background:#fff2a6}
+  .blockerBadge{inset:0;background:rgba(64,37,86,.24);font-size:28px;backdrop-filter:blur(1px)}
+  .blockerBadge.ice{background:rgba(181,236,255,.55)}.blockerBadge.box{background:rgba(132,77,28,.35)}.blockerBadge.vine{background:rgba(47,143,73,.35)}.blockerBadge.stone{background:rgba(84,82,88,.42)}.blockerBadge.chain{background:rgba(190,190,215,.38)}.blockerBadge.honey{background:rgba(255,196,77,.45)}
+  .toolGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  .tool{position:relative;border-radius:17px;background:rgba(255,255,255,.84);padding:8px;min-height:64px;box-shadow:0 6px 14px rgba(76,46,110,.10);display:flex;align-items:center;gap:7px;text-align:left;border:2px solid transparent}
+  .tool.active{border-color:#ff70b7;box-shadow:0 0 0 4px rgba(255,112,183,.22)}
+  .tool .ico{font-size:25px;width:30px;text-align:center}.tool .name{font-weight:900;font-size:13px}.tool .count{font-size:12px;font-weight:900;color:#7d6590}
+  .tiny{font-size:12px;opacity:.82;line-height:1.4}.muted{opacity:.72}.bigScore{font-size:29px;font-weight:1000;line-height:1}.comboText{font-size:15px;font-weight:900;color:#e23b88;min-height:22px;text-align:center}
+  .levelGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;max-height:330px;overflow:auto;padding-right:3px}
+  .levelBtn{height:42px;border-radius:14px;background:rgba(255,255,255,.86);font-weight:1000;box-shadow:0 4px 8px rgba(76,46,110,.09)}
+  .levelBtn.locked{opacity:.38;filter:grayscale(.8);cursor:not-allowed}.levelBtn.current{background:linear-gradient(135deg,#ff79bd,#ffd166);color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.18)}
+  .task{padding:8px;border-radius:14px;background:rgba(255,255,255,.68);margin-bottom:7px;font-weight:800}.task .bar{height:7px;background:#eee;border-radius:99px;overflow:hidden;margin-top:5px}.task .bar i{display:block;height:100%;background:linear-gradient(90deg,#7c5cff,#ff79bd)}
+  .townGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.building{border-radius:16px;padding:10px;background:rgba(255,255,255,.78);box-shadow:0 5px 12px rgba(76,46,110,.10);text-align:center;font-weight:900}.building .bico{font-size:31px}.building.locked{filter:grayscale(.9);opacity:.65}
+  .startScreen,.modalMask{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:14px;background:linear-gradient(135deg,rgba(255,232,245,.94),rgba(223,242,255,.94));backdrop-filter:blur(8px)}
+  .hero,.modal{width:min(720px,96vw);background:rgba(255,255,255,.90);border:1px solid rgba(255,255,255,.88);box-shadow:0 24px 60px rgba(76,46,110,.24);border-radius:32px;padding:24px;text-align:center;position:relative;overflow:hidden}
+  .hero:before,.modal:before{content:"✨ 🍬 🌟 💎 🧁";position:absolute;left:-20px;right:-20px;top:12px;opacity:.13;font-size:44px;letter-spacing:18px;pointer-events:none}
+  .heroTitle{font-size:44px;font-weight:1000;margin:10px 0 6px;background:linear-gradient(135deg,#ff5cab,#7c5cff);-webkit-background-clip:text;color:transparent}.heroSub{font-weight:800;line-height:1.5;margin-bottom:18px}
+  .heroBtns,.modalBtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px}.featureRow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.feature{background:rgba(255,255,255,.76);border-radius:18px;padding:12px;font-weight:900;box-shadow:0 8px 18px rgba(76,46,110,.10)}
+  .shareCard{margin:14px auto;padding:18px;border-radius:24px;width:min(420px,100%);background:linear-gradient(135deg,#fff7d7,#ffe2f2,#e5e7ff);box-shadow:0 14px 28px rgba(76,46,110,.18);text-align:left;border:2px solid #fff}.shareCard h2{margin:0 0 8px}.shareStats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:10px 0}.shareStat{background:rgba(255,255,255,.72);border-radius:14px;padding:8px;font-weight:900}.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(80px);z-index:90;background:rgba(54,37,71,.94);color:white;border-radius:999px;padding:12px 17px;font-weight:900;box-shadow:0 12px 30px rgba(0,0,0,.25);transition:.25s}.toast.show{transform:translateX(-50%) translateY(0)}
+  .floatingWords{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);pointer-events:none;z-index:8;font-size:34px;font-weight:1000;color:#ff4f9d;text-shadow:0 3px 0 white,0 8px 18px rgba(0,0,0,.15);animation:wordFly .9s ease-out forwards;white-space:nowrap}
+  .devPanel{position:fixed;right:12px;top:72px;z-index:60;width:min(310px,94vw);max-height:78vh;overflow:auto;background:rgba(255,255,255,.96);border-radius:22px;box-shadow:0 18px 46px rgba(76,46,110,.28);padding:12px}.devGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.smallBtn{font-size:12px;padding:8px 9px;border-radius:12px;background:#f4efff;font-weight:900}
+
+  .board.shake{animation:shake .24s linear 1}
+  .cell.preview{box-shadow:0 0 0 4px rgba(255,214,102,.8),0 0 20px rgba(255,111,177,.45)}
+  .cell.superPulse{animation:superPulse .42s ease-out 2}
+  .spark{position:absolute;z-index:20;pointer-events:none;font-size:18px;animation:sparkFly .7s ease-out forwards;filter:drop-shadow(0 2px 2px rgba(0,0,0,.15))}
+  .townScene{position:relative;min-height:360px;border-radius:28px;overflow:hidden;padding:18px;background:linear-gradient(180deg,#c9efff 0%,#fff2fb 48%,#dfffd9 49%,#bff3bc 100%);box-shadow:inset 0 0 0 2px rgba(255,255,255,.65),0 14px 28px rgba(76,46,110,.13);margin:12px 0;text-align:left}
+  .townScene:before{content:"☁️   ☁️      ☁️";position:absolute;top:16px;left:0;right:0;font-size:32px;letter-spacing:38px;opacity:.58;animation:cloudMove 16s linear infinite;white-space:nowrap}
+  .townScene:after{content:"";position:absolute;left:-40px;right:-40px;bottom:0;height:120px;background:radial-gradient(circle at 12% 70%,#fff 0 5px,transparent 6px),radial-gradient(circle at 32% 78%,#ffd8ec 0 5px,transparent 6px),radial-gradient(circle at 70% 72%,#fff7a8 0 5px,transparent 6px),linear-gradient(180deg,transparent,#94da85);opacity:.75}
+  .townBuildings{position:relative;z-index:2;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding-top:60px}
+  .townBuilding{min-height:112px;border-radius:22px;padding:10px;text-align:center;font-weight:900;background:rgba(255,255,255,.78);border:2px solid rgba(255,255,255,.86);box-shadow:0 9px 18px rgba(76,46,110,.14);position:relative;overflow:hidden}
+  .townBuilding.locked{filter:grayscale(.95);opacity:.55}.townBuilding .bico{font-size:37px;animation:floaty 3.1s ease-in-out infinite}.townBuilding .lvl{display:inline-block;margin-top:5px;border-radius:999px;background:#fff3bf;padding:2px 7px;font-size:12px}.townBuilding.lvl3{background:linear-gradient(135deg,#fff,#ffe2f2,#e8e2ff)}
+  .townBuilding.lvl2 .bico{font-size:43px}.townBuilding.lvl3 .bico{font-size:49px;filter:drop-shadow(0 0 8px rgba(255,214,102,.9))}
+  .townBuilding.candyHouse:after{content:"🍭";position:absolute;right:8px;bottom:4px}.townBuilding.catCafe:after{content:"♨️";position:absolute;right:8px;top:6px;animation:steam 1.7s ease-in-out infinite}.townBuilding.starFountain:after{content:"💦";position:absolute;left:10px;bottom:8px;animation:floaty 1.4s infinite}.townBuilding.dreamGarden:after{content:"🦋";position:absolute;right:10px;top:8px;animation:butterfly 2.6s ease-in-out infinite}.townBuilding.magicLibrary:after{content:"✨";position:absolute;left:8px;top:8px;animation:pulse 1.4s infinite}.townBuilding.rainbowTheatre:after{content:"🌈";position:absolute;right:4px;bottom:2px}.townBuilding.cloudStation:after{content:"🚃";position:absolute;left:-20px;bottom:6px;animation:trainMove 4s linear infinite}
+  .townControls{position:relative;z-index:3;display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;margin-top:12px}.townCard{background:rgba(255,255,255,.82);border-radius:18px;padding:10px 12px;font-weight:900;box-shadow:0 6px 14px rgba(76,46,110,.12)}
+  @keyframes shake{20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+  @keyframes superPulse{50%{transform:scale(1.12);filter:brightness(1.25) saturate(1.2)}}
+  @keyframes sparkFly{to{transform:translate(var(--dx),var(--dy)) scale(.2) rotate(90deg);opacity:0}}
+  @keyframes cloudMove{from{transform:translateX(-120px)}to{transform:translateX(160px)}}
+  @keyframes steam{50%{transform:translateY(-7px);opacity:.45}}
+  @keyframes butterfly{50%{transform:translate(8px,-7px) rotate(14deg)}}
+  @keyframes trainMove{to{left:110%}}
+
+  @keyframes floaty{50%{transform:translateY(-5px) rotate(-4deg)}}@keyframes pulse{50%{transform:scale(1.08);filter:brightness(1.15)}}@keyframes pop{to{transform:scale(.1) rotate(18deg);opacity:.15}}@keyframes drop{from{transform:translateY(-18px);opacity:.6}to{transform:translateY(0);opacity:1}}@keyframes wordFly{to{transform:translate(-50%,-120%);opacity:0}}
+  @media(max-width:950px){.layout{grid-template-columns:1fr}.sideLeft{order:2}.boardWrap{order:1}.sideRight{order:3}.panel{border-radius:22px}.topbar{align-items:flex-start}.brand{font-size:20px}.toolGrid{grid-template-columns:repeat(5,1fr)}.tool{min-height:56px;justify-content:center;text-align:center;flex-direction:column;gap:2px}.tool .name{display:none}.levelGrid{grid-template-columns:repeat(10,1fr);max-height:none}.townGrid{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:560px){.app{padding:8px}.brand .logo{width:40px;height:40px}.heroTitle{font-size:33px}.featureRow{grid-template-columns:1fr}.board{gap:4px;padding:5px;border-radius:20px}.cell{border-radius:13px;font-size:27px}.toolGrid{grid-template-columns:repeat(3,1fr)}.levelGrid{grid-template-columns:repeat(6,1fr)}.topbar{flex-direction:column}.pillrow{justify-content:flex-start}.panel{padding:10px}.hero,.modal{padding:18px;border-radius:26px}.townBuildings{grid-template-columns:repeat(2,1fr);padding-top:52px}.townScene{min-height:520px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand"><div class="logo">🍬</div><div>星糖大冒险<br><span class="tiny">Star Candy Quest</span></div></div>
+    <div class="pillrow">
+      <div class="pill">🪙 <span id="coinsTop">0</span></div>
+      <div class="pill">⭐ <span id="starsTop">0</span></div>
+      <button class="btn" id="soundBtn">🔊 声音</button>
+      <button class="btn warn" id="devBtn">DEV</button>
+    </div>
+  </div>
+
+  <div class="layout" id="gameScreen">
+    <aside class="panel sideLeft">
+      <h3>关卡地图</h3>
+      <div class="levelGrid" id="levelGrid"></div>
+      <hr style="border:none;border-top:1px solid rgba(86,58,104,.15);margin:12px 0">
+      <h3>糖果小镇</h3>
+      <div class="townGrid" id="townMini"></div>
+      <button class="btn primary" id="openTown" style="width:100%;margin-top:10px">进入小镇</button>
+    </aside>
+
+    <main class="panel boardWrap">
+      <div class="objectiveList" id="objectives"></div>
+      <div class="bossBar hidden" id="bossBar"><div class="bossFill" id="bossFill"></div></div>
+      <div class="pillrow" style="justify-content:center">
+        <div class="pill">第 <span id="levelNo">1</span> 关</div>
+        <div class="pill">👣 <span id="movesLeft">0</span></div>
+        <div class="pill">🏆 <span id="scoreNow">0</span></div>
+      </div>
+      <div class="comboText" id="comboText"></div>
+      <div class="board" id="board"></div>
+      <div class="pillrow" style="justify-content:center">
+        <button class="btn" id="retryBtn">重玩</button>
+        <button class="btn" id="hintBtn">提示</button>
+        <button class="btn" id="dailyBtn">每日任务</button>
+      </div>
+    </main>
+
+    <aside class="panel sideRight">
+      <h3>道具栏</h3>
+      <div class="toolGrid" id="toolGrid"></div>
+      <p class="tiny muted">提示：先点道具，再点棋盘。换位手套需要点两个任意棋子。火箭、彩虹球和扫帚会直接触发强力效果。</p>
+      <hr style="border:none;border-top:1px solid rgba(86,58,104,.15);margin:12px 0">
+      <h3>今日挑战</h3>
+      <div id="dailyMini"></div>
+      <hr style="border:none;border-top:1px solid rgba(86,58,104,.15);margin:12px 0">
+      <div class="bigScore" id="streakView">连胜 0</div>
+      <p class="tiny">连胜 3/5/10 关会获得道具和头像框奖励。失败会中断连胜。</p>
+    </aside>
+  </div>
+</div>
+
+<div class="startScreen" id="startScreen">
+  <div class="hero">
+    <div style="font-size:56px">🍭✨🌈</div>
+    <div class="heroTitle">星糖大冒险</div>
+    <div class="heroSub">三消、火箭、彩虹炸弹、Boss、糖果小镇、每日挑战、截图分享，一版就能玩的完整休闲游戏。</div>
+    <div class="featureRow">
+      <div class="feature">💥 道具组合爆炸爽感</div>
+      <div class="feature">🏡 星星建设糖果小镇</div>
+      <div class="feature">📸 通关成绩卡可分享</div>
+    </div>
+    <div class="heroBtns">
+      <button class="btn primary" id="startBtn">开始游戏</button>
+      <button class="btn" id="continueBtn">继续进度</button>
+      <button class="btn warn" id="resetBtn">清空存档</button>
+    </div>
+  </div>
+</div>
+
+<div class="modalMask hidden" id="modalMask"><div class="modal" id="modalBox"></div></div>
+<div class="devPanel hidden" id="devPanel">
+  <h3 style="margin:0 0 8px">DEV 测试面板</h3>
+  <div class="devGrid">
+    <button class="smallBtn" data-dev="coins">+100000 金币</button>
+    <button class="smallBtn" data-dev="tools">所有道具 +10</button>
+    <button class="smallBtn" data-dev="win">直接通关</button>
+    <button class="smallBtn" data-dev="unlock">解锁全部关卡</button>
+    <button class="smallBtn" data-dev="town">解锁全部小镇</button>
+    <button class="smallBtn" data-dev="blast">全屏爆炸</button>
+    <button class="smallBtn" data-dev="rainbow">生成彩虹球</button>
+    <button class="smallBtn" data-dev="mode">切换难度</button>
+  </div>
+  <p class="tiny muted">当前难度：<b id="modeView">normal</b></p>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+
+const SIZE = 8;
+const MAX_LEVEL = 30;
+const COLORS = [
+  {id:'red', icon:'🍓', name:'草莓'},
+  {id:'blue', icon:'💧', name:'水滴'},
+  {id:'yellow', icon:'⭐', name:'星星'},
+  {id:'green', icon:'🍀', name:'四叶草'},
+  {id:'purple', icon:'💎', name:'宝石'},
+  {id:'orange', icon:'🍊', name:'橘子'}
+];
+const COLOR_MAP = Object.fromEntries(COLORS.map(c=>[c.id,c]));
+const SPECIAL_ICON = {row:'➡️', col:'⬇️', bomb:'💣', rainbow:'🌈', bee:'🐝'};
+const BLOCK_ICON = {ice:'🧊', box:'📦', vine:'🌿', stone:'🪨', chain:'⛓️', honey:'🍯'};
+const TOOL_INFO = {
+  hammer:{name:'小锤子', icon:'🔨', desc:'敲掉一个格子'},
+  glove:{name:'换位手套', icon:'🧤', desc:'任意交换两个'},
+  row:{name:'横向火箭', icon:'➡️', desc:'清除一整行'},
+  col:{name:'纵向火箭', icon:'⬇️', desc:'清除一整列'},
+  rainbow:{name:'彩虹球', icon:'🌈', desc:'消除一种颜色'},
+  shuffle:{name:'洗牌', icon:'🔀', desc:'重新排列'},
+  add5:{name:'加5步', icon:'➕', desc:'增加5步'},
+  broom:{name:'魔法扫帚', icon:'🧹', desc:'清轻度障碍'},
+  lucky:{name:'幸运盲盒', icon:'🎁', desc:'随机强力效果'}
+};
+const BUILDINGS = [
+  {id:'house', icon:'🏠', name:'糖果屋', cost:3, coins:180, earn:16, scene:'candyHouse'},
+  {id:'cafe', icon:'☕', name:'小猫咖啡馆', cost:5, coins:260, earn:24, scene:'catCafe'},
+  {id:'fountain', icon:'⛲', name:'星星喷泉', cost:7, coins:360, earn:32, scene:'starFountain'},
+  {id:'garden', icon:'🌸', name:'梦幻花园', cost:9, coins:460, earn:40, scene:'dreamGarden'},
+  {id:'shop', icon:'🧸', name:'小熊商店', cost:11, coins:560, earn:52, scene:'bearShop'},
+  {id:'library', icon:'📚', name:'魔法图书馆', cost:13, coins:700, earn:64, scene:'magicLibrary'},
+  {id:'theatre', icon:'🎪', name:'彩虹剧场', cost:16, coins:880, earn:78, scene:'rainbowTheatre'},
+  {id:'station', icon:'🚂', name:'云朵车站', cost:20, coins:1100, earn:96, scene:'cloudStation'}
+];
+const PRAISES = ['这波连锁有点离谱！','你是不是偷偷练过？','差一步，真的差一步！','这关适合发给朋友试试。','糖果宇宙正在为你鼓掌！','这操作可以截图了。'];
+
+let meta = loadMeta();
+let game = null;
+let audioCtx = null;
+let busy = false;
+let selected = null;
+let activeTool = null;
+let gloveFirst = null;
+let hintTimer = null;
+
+const el = id => document.getElementById(id);
+const boardEl = el('board');
+const modalMask = el('modalMask');
+const modalBox = el('modalBox');
+const toastEl = el('toast');
+
+function defaultMeta(){
+  return {
+    level:1, unlocked:1, coins:500, stars:0, sound:true, mode:'normal', streak:0,
+    inventory:{hammer:3,glove:2,row:2,col:2,rainbow:1,shuffle:2,add5:2,broom:1,lucky:1},
+    best:{}, town:[], townLevels:{}, lastTownIncome:Date.now(), daily:null
+  };
+}
+function loadMeta(){
+  try{
+    const raw = localStorage.getItem('starCandyQuestSave');
+    const data = raw ? JSON.parse(raw) : {};
+    const d = defaultMeta();
+    return {...d,...data,inventory:{...d.inventory,...(data.inventory||{})},best:{...(data.best||{})},town:data.town||[],townLevels:{...(data.townLevels||{})},lastTownIncome:data.lastTownIncome||Date.now(),daily:data.daily||null};
+  }catch(e){return defaultMeta();}
+}
+function saveMeta(){ localStorage.setItem('starCandyQuestSave', JSON.stringify(meta)); }
+function todayKey(){ return new Date().toISOString().slice(0,10); }
+function ensureDaily(){
+  if(!meta.daily || meta.daily.date !== todayKey()){
+    meta.daily = {date:todayKey(), tasks:{play3:0, rocket2:0, combo5:0, star3:0}, claimed:false};
+    saveMeta();
+  }
+}
+function taskInfo(){
+  ensureDaily();
+  return [
+    {id:'play3', text:'完成 3 关', need:3, val:meta.daily.tasks.play3},
+    {id:'rocket2', text:'使用 2 次火箭', need:2, val:meta.daily.tasks.rocket2},
+    {id:'combo5', text:'达成 5 连击', need:1, val:meta.daily.tasks.combo5},
+    {id:'star3', text:'获得 1 次三星通关', need:1, val:meta.daily.tasks.star3}
+  ];
+}
+function addDaily(id, amount=1){
+  ensureDaily();
+  if(meta.daily.tasks[id] !== undefined){meta.daily.tasks[id] += amount; saveMeta(); renderDaily();}
+}
+function showToast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  setTimeout(()=>toastEl.classList.remove('show'),1800);
+}
+function rnd(n){ return Math.floor(Math.random()*n); }
+function choice(arr){ return arr[rnd(arr.length)]; }
+function delay(ms){ return new Promise(res=>setTimeout(res,ms)); }
+
+function beep(type='click'){
+  if(!meta.sound) return;
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    const now = audioCtx.currentTime;
+    const cfg = {
+      click:[420,.035,.055], match:[620,.055,.09], combo:[820,.08,.10], boom:[130,.16,.20], win:[900,.20,.12], fail:[170,.25,.16], reward:[760,.18,.10]
+    }[type] || [420,.04,.05];
+    o.type = type==='boom'?'sawtooth':'sine';
+    o.frequency.setValueAtTime(cfg[0], now);
+    if(type==='win') o.frequency.exponentialRampToValueAtTime(1320, now+cfg[1]);
+    if(type==='fail') o.frequency.exponentialRampToValueAtTime(90, now+cfg[1]);
+    g.gain.setValueAtTime(cfg[2], now);
+    g.gain.exponentialRampToValueAtTime(0.001, now+cfg[1]);
+    o.connect(g); g.connect(audioCtx.destination); o.start(now); o.stop(now+cfg[1]+.02);
+  }catch(e){}
+}
+
+function levelDef(n){
+  let moves = Math.max(16, 25 - Math.floor(n/4));
+  if(meta.mode==='easy') moves += 7;
+  if(meta.mode==='hard') moves -= 4;
+  const scoreNeed = 1600 + n*620;
+  const mainColor = COLORS[n % COLORS.length].id;
+  const def = {n, moves, targets:[], blockers:{}, keys:0, lucky:false, reverse:false, boss:false};
+  if(n<=2){ def.targets.push({kind:'score', need:scoreNeed}); }
+  else if(n%6===0){ def.boss=true; def.targets.push({kind:'boss', need:90+n*18}); def.targets.push({kind:'score', need:scoreNeed}); }
+  else if(n%5===0){ def.keys = Math.min(3,1+Math.floor(n/10)); def.targets.push({kind:'key', need:def.keys, got:0}); }
+  else if(n%4===0){ def.targets.push({kind:'color', color:mainColor, need:12+n, got:0}); }
+  else { def.targets.push({kind:'score', need:scoreNeed}); def.targets.push({kind:'color', color:mainColor, need:8+Math.floor(n/2), got:0}); }
+
+  if(n>=3) def.blockers.ice = Math.min(18, 4+n);
+  if(n>=7) def.blockers.box = Math.min(12, Math.floor(n/2));
+  if(n>=11) def.blockers.vine = Math.min(10, Math.floor(n/2)-2);
+  if(n>=15) def.blockers.chain = Math.min(10, Math.floor(n/3));
+  if(n>=18) def.blockers.stone = Math.min(8, Math.floor(n/4));
+  if(n>=22) def.blockers.honey = Math.min(10, Math.floor(n/3));
+
+  const blockerCycle = ['ice','box','vine','chain','stone','honey'];
+  if(n>=3 && !def.boss && n%5!==0){
+    const b = blockerCycle[(n+1)%Math.min(blockerCycle.length, Math.max(1,Math.floor(n/4)+1))];
+    const count = Math.min(def.blockers[b]||0, 5+Math.floor(n/2));
+    if(count>0) def.targets.push({kind:'blocker', blocker:b, need:count, got:0});
+  }
+  if(n===13 || n===19 || n===27) def.reverse = true;
+  if(n===8 || n===17 || n===26) def.lucky = true;
+  return def;
+}
+
+function makeCandy(){ return {c:choice(COLORS).id, special:null, key:false, blocker:null, hp:0, clear:false, hint:false}; }
+function emptyCell(){ return {c:null, special:null, key:false, blocker:null, hp:0, clear:false, hint:false}; }
+function blockerHp(type){ return {ice:1,box:2,vine:1,stone:2,chain:1,honey:2}[type] || 1; }
+
+function startLevel(n){
+  selected = null; activeTool = null; gloveFirst = null; busy = false;
+  const def = levelDef(n);
+  const board = [];
+  for(let r=0;r<SIZE;r++){
+    board[r] = [];
+    for(let c=0;c<SIZE;c++) board[r][c] = makeCandy();
+  }
+  game = {
+    level:n, def, board, moves:def.moves, score:0, combo:0, maxCombo:0, over:false,
+    bossHp:def.boss ? def.targets.find(t=>t.kind==='boss').need : 0,
+    bossMax:def.boss ? def.targets.find(t=>t.kind==='boss').need : 0,
+    reverseTriggered:false, lastPraise:0
+  };
+  removeInitialMatches();
+  placeBlockers(def.blockers);
+  placeKeys(def.keys);
+  ensureMoveExists();
+  el('startScreen').classList.add('hidden');
+  renderAll();
+  if(def.lucky) showToast('🎁 稀有幸运关：本关奖励翻倍！');
+  if(def.reverse) setTimeout(()=>showToast('⚠️ 这关可能出现反转目标。'),800);
+}
+
+function removeInitialMatches(){
+  let guard=0;
+  while(findMatches().length && guard++<100){
+    const groups = findMatches();
+    groups.flatMap(g=>g.cells).forEach(p=>{ game.board[p.r][p.c].c = choice(COLORS).id; game.board[p.r][p.c].special=null; });
+  }
+}
+function placeBlockers(blockers){
+  const taken = new Set();
+  Object.entries(blockers).forEach(([type,count])=>{
+    let tries=0, placed=0;
+    while(placed<count && tries++<500){
+      const r = 1+rnd(SIZE-2), c = rnd(SIZE);
+      const key = r+','+c;
+      if(taken.has(key)) continue;
+      game.board[r][c].blocker = type;
+      game.board[r][c].hp = blockerHp(type);
+      taken.add(key); placed++;
+    }
+  });
+}
+function placeKeys(count){
+  for(let i=0;i<count;i++){
+    const c = Math.floor((i+1)*SIZE/(count+1));
+    game.board[0][c].key = true;
+  }
+}
+
+function renderAll(){ renderTop(); renderBoard(); renderObjectives(); renderTools(); renderLevels(); renderTownMini(); renderDaily(); }
+function renderTop(){
+  ensureDaily();
+  el('coinsTop').textContent = meta.coins;
+  el('starsTop').textContent = meta.stars;
+  el('soundBtn').textContent = meta.sound ? '🔊 声音' : '🔇 静音';
+  el('modeView').textContent = meta.mode;
+  if(game){
+    el('levelNo').textContent = game.level;
+    el('movesLeft').textContent = game.moves;
+    el('scoreNow').textContent = game.score;
+    el('streakView').textContent = '连胜 ' + meta.streak;
+  }
+}
+function renderObjectives(){
+  if(!game) return;
+  const box = el('objectives'); box.innerHTML='';
+  game.def.targets.forEach(t=>{
+    const d = document.createElement('div');
+    d.className = 'objective' + (targetDone(t)?' done':'');
+    d.textContent = targetText(t);
+    box.appendChild(d);
+  });
+  const hasBoss = game.def.targets.some(t=>t.kind==='boss');
+  el('bossBar').classList.toggle('hidden', !hasBoss);
+  if(hasBoss){ el('bossFill').style.width = Math.max(0, game.bossHp/game.bossMax*100) + '%'; }
+}
+function targetDone(t){
+  if(t.kind==='score') return game.score >= t.need;
+  if(t.kind==='boss') return game.bossHp <= 0;
+  return (t.got||0) >= t.need;
+}
+function targetText(t){
+  if(t.kind==='score') return `🏆 ${Math.min(game.score,t.need)}/${t.need}`;
+  if(t.kind==='color') return `${COLOR_MAP[t.color].icon} ${(t.got||0)}/${t.need}`;
+  if(t.kind==='blocker') return `${BLOCK_ICON[t.blocker]} ${(t.got||0)}/${t.need}`;
+  if(t.kind==='key') return `🗝️ ${(t.got||0)}/${t.need}`;
+  if(t.kind==='boss') return `👾 HP ${Math.max(0,game.bossHp)}/${game.bossMax}`;
+  return '';
+}
+function renderBoard(){
+  if(!game) return;
+  boardEl.style.gridTemplateColumns = `repeat(${SIZE},1fr)`;
+  boardEl.innerHTML='';
+  for(let r=0;r<SIZE;r++){
+    for(let c=0;c<SIZE;c++){
+      const cell = game.board[r][c];
+      const b = document.createElement('button');
+      b.className = 'cell';
+      if(selected && selected.r===r && selected.c===c) b.classList.add('selected');
+      if(cell.hint) b.classList.add('hint');
+      b.dataset.r=r; b.dataset.c=c;
+      const candy = document.createElement('span'); candy.className='candy'; candy.textContent=candyIcon(cell);
+      b.appendChild(candy);
+      if(cell.special){ const s=document.createElement('span'); s.className='specialBadge'; s.textContent=SPECIAL_ICON[cell.special]||'✨'; b.appendChild(s); }
+      if(cell.key){ const k=document.createElement('span'); k.className='keyBadge'; k.textContent='🗝️'; b.appendChild(k); }
+      if(cell.blocker){ const o=document.createElement('span'); o.className='blockerBadge '+cell.blocker; o.textContent=BLOCK_ICON[cell.blocker] || '⬛'; if(cell.hp>1) o.title='HP '+cell.hp; b.appendChild(o); }
+      b.addEventListener('click',()=>onCellClick(r,c));
+      boardEl.appendChild(b);
+    }
+  }
+}
+function candyIcon(cell){
+  if(!cell.c) return '';
+  if(cell.special==='rainbow' || cell.c==='rainbow') return '🌈';
+  return COLOR_MAP[cell.c]?.icon || '🍬';
+}
+function renderTools(){
+  const box = el('toolGrid'); box.innerHTML='';
+  Object.keys(TOOL_INFO).forEach(id=>{
+    const t = TOOL_INFO[id];
+    const btn = document.createElement('button');
+    btn.className = 'tool' + (activeTool===id?' active':'');
+    btn.disabled = (meta.inventory[id]||0)<=0;
+    btn.innerHTML = `<span class="ico">${t.icon}</span><span><span class="name">${t.name}</span><br><span class="count">x${meta.inventory[id]||0}</span></span>`;
+    btn.title = t.desc;
+    btn.addEventListener('click',()=>useTool(id));
+    box.appendChild(btn);
+  });
+}
+function renderLevels(){
+  const box = el('levelGrid'); box.innerHTML='';
+  for(let i=1;i<=MAX_LEVEL;i++){
+    const btn = document.createElement('button');
+    btn.className = 'levelBtn' + (i===meta.level?' current':'') + (i>meta.unlocked?' locked':'');
+    const best = meta.best[i];
+    btn.textContent = i>meta.unlocked ? '🔒' : `${i}${best?'★'.repeat(best.stars):''}`;
+    btn.addEventListener('click',()=>{ if(i<=meta.unlocked) startLevel(i); else showToast('先通关前面的关卡。'); });
+    box.appendChild(btn);
+  }
+}
+function townLevel(id){ return meta.town.includes(id) ? Math.max(1, meta.townLevels?.[id] || 1) : 0; }
+function townPower(){ return BUILDINGS.reduce((sum,b)=>sum+townLevel(b.id)*b.earn,0); }
+function renderTownMini(){
+  const box = el('townMini'); if(!box) return; box.innerHTML='';
+  BUILDINGS.slice(0,4).forEach(b=>{
+    const div = document.createElement('div');
+    const lvl = townLevel(b.id);
+    div.className='building'+(lvl?'':' locked');
+    div.innerHTML = `<div class="bico">${b.icon}</div><div>${b.name}</div><div class="tiny">${lvl?'Lv.'+lvl:b.cost+'⭐'}</div>`;
+    box.appendChild(div);
+  });
+}
+function renderDaily(){
+  const mini = el('dailyMini'); if(!mini) return; mini.innerHTML='';
+  taskInfo().forEach(t=>{
+    const v = Math.min(t.val,t.need);
+    const div=document.createElement('div'); div.className='task';
+    div.innerHTML = `<div>${v>=t.need?'✅':'🎯'} ${t.text} <span class="muted">${v}/${t.need}</span></div><div class="bar"><i style="width:${v/t.need*100}%"></i></div>`;
+    mini.appendChild(div);
+  });
+}
+
+function useTool(id){
+  if(busy || !game || game.over) return;
+  if((meta.inventory[id]||0)<=0){ showToast('这个道具不够。'); return; }
+  beep('click');
+  if(id==='add5'){
+    consumeTool(id); game.moves += 5; showToast('➕ 增加 5 步'); renderAll(); return;
+  }
+  if(id==='shuffle'){
+    consumeTool(id); shuffleBoard(); renderAll(); showToast('🔀 棋盘已洗牌'); return;
+  }
+  if(id==='broom'){
+    consumeTool(id); magicBroom(); return;
+  }
+  if(id==='lucky'){
+    consumeTool(id); luckyEffect(); return;
+  }
+  activeTool = activeTool===id ? null : id;
+  gloveFirst = null;
+  renderTools();
+  showToast(activeTool ? `已选择：${TOOL_INFO[id].name}` : '取消选择道具');
+}
+function consumeTool(id){ meta.inventory[id] = Math.max(0,(meta.inventory[id]||0)-1); saveMeta(); activeTool=null; gloveFirst=null; renderTools(); }
+
+async function onCellClick(r,c){
+  if(busy || !game || game.over) return;
+  clearHints();
+  if(activeTool){ await applyToolToCell(activeTool,r,c); return; }
+  beep('click');
+  if(!selected){ selected = {r,c}; renderBoard(); return; }
+  if(selected.r===r && selected.c===c){ selected=null; renderBoard(); return; }
+  const from = selected, to = {r,c}; selected=null; renderBoard();
+  if(!adjacent(from,to)){ selected = to; renderBoard(); return; }
+  await trySwap(from,to);
+}
+function adjacent(a,b){ return Math.abs(a.r-b.r)+Math.abs(a.c-b.c)===1; }
+function swapCandy(a,b){
+  const A = game.board[a.r][a.c], B = game.board[b.r][b.c];
+  [A.c,B.c] = [B.c,A.c]; [A.special,B.special] = [B.special,A.special]; [A.key,B.key] = [B.key,A.key];
+}
+async function trySwap(a,b){
+  busy = true;
+  const ca = game.board[a.r][a.c], cb = game.board[b.r][b.c];
+  swapCandy(a,b); renderBoard(); await delay(120);
+  if(isSpecialCombo(ca,cb)){
+    game.moves--; await triggerCombo(a,b,ca.special,cb.special); await resolveAfterClear(null); await afterAction(); busy=false; return;
+  }
+  const matches = findMatches();
+  if(matches.length){
+    game.moves--; await resolveCascade({from:a,to:b}); await afterAction(); busy=false; return;
+  }
+  swapCandy(a,b); renderBoard(); showToast('这个交换不能消除。'); beep('fail'); busy=false;
+}
+function isSpecialCombo(a,b){ return a && b && ((a.special && b.special) || a.special==='rainbow' || b.special==='rainbow'); }
+
+async function applyToolToCell(id,r,c){
+  if(id==='hammer'){
+    consumeTool(id); busy=true; await clearPositions([{r,c}], 'tool'); await resolveAfterClear(null); await afterAction(); busy=false; return;
+  }
+  if(id==='glove'){
+    if(!gloveFirst){ gloveFirst={r,c}; showToast('再点另一个棋子进行任意交换。'); renderBoard(); return; }
+    const first = gloveFirst; consumeTool(id); busy=true; swapCandy(first,{r,c}); renderBoard(); await delay(160);
+    const A = game.board[first.r][first.c], B = game.board[r][c];
+    if(isSpecialCombo(A,B)){ await triggerCombo(first,{r,c},A.special,B.special); await resolveAfterClear(null); }
+    else { await resolveCascade({from:first,to:{r,c}}); }
+    await afterAction(); busy=false; return;
+  }
+  if(id==='row'){ consumeTool(id); addDaily('rocket2'); busy=true; await clearPositions(rowPositions(r), 'rocket'); await resolveAfterClear(null); await afterAction(); busy=false; return; }
+  if(id==='col'){ consumeTool(id); addDaily('rocket2'); busy=true; await clearPositions(colPositions(c), 'rocket'); await resolveAfterClear(null); await afterAction(); busy=false; return; }
+  if(id==='rainbow'){
+    consumeTool(id); busy=true;
+    const color = game.board[r][c].c && game.board[r][c].c!=='rainbow' ? game.board[r][c].c : choice(COLORS).id;
+    await clearColor(color); await resolveAfterClear(null); await afterAction(); busy=false; return;
+  }
+}
+async function magicBroom(){
+  busy=true;
+  const pos=[];
+  for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++){
+    const b=game.board[r][c].blocker;
+    if(b && b!=='stone') pos.push({r,c});
+  }
+  await clearPositions(pos.slice(0,18),'broom'); await resolveAfterClear(null); await afterAction(); busy=false;
+}
+async function luckyEffect(){
+  const effects=['blast','coins','rainbow','rockets','addmoves'];
+  const e=choice(effects);
+  if(e==='coins'){ meta.coins+=260; saveMeta(); showToast('🎁 幸运盲盒：金币 +260'); renderAll(); beep('reward'); return; }
+  if(e==='addmoves'){ game.moves+=8; showToast('🎁 幸运盲盒：+8 步'); renderAll(); return; }
+  busy=true;
+  if(e==='blast'){
+    await clearPositions(allPositions().filter(()=>Math.random()<.26),'lucky');
+    await resolveAfterClear(null);
+    await afterAction(); busy=false; return;
+  }
+  if(e==='rainbow'){
+    const p=randomCandySpot(); game.board[p.r][p.c].special='rainbow'; game.board[p.r][p.c].c='rainbow'; showToast('🎁 幸运盲盒：彩虹球出现');
+  }
+  if(e==='rockets'){
+    for(let i=0;i<4;i++){ const p=randomCandySpot(); game.board[p.r][p.c].special = i%2?'row':'col'; }
+    showToast('🎁 幸运盲盒：火箭雨');
+  }
+  renderBoard(); await delay(180); await resolveCascade(null); await afterAction(); busy=false;
+}
+
+function findMatches(){
+  if(!game) return [];
+  const groups=[];
+  for(let r=0;r<SIZE;r++){
+    let run=[]; let last=null;
+    for(let c=0;c<=SIZE;c++){
+      const cell = c<SIZE ? game.board[r][c] : null;
+      const val = cell && cell.c !== 'rainbow' ? cell.c : null;
+      if(val && val===last) run.push({r,c});
+      else { if(run.length>=3) groups.push({type:'row', cells:run.slice()}); run = val ? [{r,c}] : []; last=val; }
+    }
+  }
+  for(let c=0;c<SIZE;c++){
+    let run=[]; let last=null;
+    for(let r=0;r<=SIZE;r++){
+      const cell = r<SIZE ? game.board[r][c] : null;
+      const val = cell && cell.c !== 'rainbow' ? cell.c : null;
+      if(val && val===last) run.push({r,c});
+      else { if(run.length>=3) groups.push({type:'col', cells:run.slice()}); run = val ? [{r,c}] : []; last=val; }
+    }
+  }
+  for(let r=0;r<SIZE-1;r++) for(let c=0;c<SIZE-1;c++){
+    const v=game.board[r][c].c;
+    if(v && v!=='rainbow' && game.board[r+1][c].c===v && game.board[r][c+1].c===v && game.board[r+1][c+1].c===v){
+      groups.push({type:'square', cells:[{r,c},{r:r+1,c},{r,c:c+1},{r:r+1,c:c+1}]});
+    }
+  }
+  return groups;
+}
+function chooseSpecial(groups,lastSwap){
+  if(!groups.length) return null;
+  const count = new Map();
+  groups.forEach(g=>g.cells.forEach(p=>{ const k=p.r+','+p.c; count.set(k,(count.get(k)||0)+1); }));
+  for(const [k,v] of count.entries()){
+    if(v>=2){ const [r,c]=k.split(',').map(Number); if(!game.board[r][c].blocker) return {r,c,type:'bomb'}; }
+  }
+  const preferred = [];
+  if(lastSwap){ preferred.push(lastSwap.to,lastSwap.from); }
+  function pickInGroup(g){
+    for(const p of preferred){ if(p && g.cells.some(x=>x.r===p.r&&x.c===p.c) && !game.board[p.r][p.c].blocker) return {r:p.r,c:p.c}; }
+    return g.cells.find(p=>!game.board[p.r][p.c].blocker) || g.cells[0];
+  }
+  const five = groups.find(g=>g.cells.length>=5 && g.type!=='square');
+  if(five){ const p=pickInGroup(five); return {...p,type:'rainbow'}; }
+  const square = groups.find(g=>g.type==='square');
+  if(square){ const p=pickInGroup(square); return {...p,type:'bee'}; }
+  const four = groups.find(g=>g.cells.length===4);
+  if(four){ const p=pickInGroup(four); return {...p,type:four.type==='row'?'row':'col'}; }
+  return null;
+}
+
+async function resolveCascade(lastSwap){
+  let loops=0;
+  while(loops++<18){
+    let groups = findMatches();
+    if(!groups.length) break;
+    game.combo++;
+    game.maxCombo = Math.max(game.maxCombo, game.combo);
+    if(game.combo>=5) addDaily('combo5');
+    const create = chooseSpecial(groups,lastSwap);
+    lastSwap = null;
+    const posMap = new Map();
+    groups.forEach(g=>g.cells.forEach(p=>posMap.set(p.r+','+p.c,{r:p.r,c:p.c})));
+    if(create) posMap.delete(create.r+','+create.c);
+    let positions = [...posMap.values()];
+    positions = expandBySpecials(positions);
+    await clearPositions(positions,'match');
+    if(create && game.board[create.r][create.c].c){
+      game.board[create.r][create.c].special = create.type;
+      if(create.type==='rainbow') game.board[create.r][create.c].c = 'rainbow';
+      word(create.type==='rainbow'?'🌈 彩虹炸弹！': create.type==='bomb'?'💣 范围炸弹！':create.type==='bee'?'🐝 小蜜蜂！':'🚀 火箭！');
+      beep('reward');
+    }
+    await dropAndFill();
+    await collectBottomKeys();
+    maybeGrowVines();
+    renderAll();
+    if(game.combo>=3) word(comboTitle(game.combo));
+    if(game.def.reverse && !game.reverseTriggered && game.moves <= Math.ceil(game.def.moves/2)) triggerReverseGoal();
+    await delay(120);
+  }
+  game.combo = 0;
+  ensureMoveExists();
+  renderAll();
+}
+function comboTitle(n){
+  if(n>=20) return '神级连击 x'+n;
+  if(n>=15) return '糖果爆破王 x'+n;
+  if(n>=10) return '连击大师 x'+n;
+  if(n>=5) return '漂亮连锁 x'+n;
+  return 'Combo x'+n;
+}
+function expandBySpecials(positions){
+  const seen = new Map(positions.map(p=>[p.r+','+p.c,p]));
+  const queue = positions.slice();
+  let guard=0;
+  while(queue.length && guard++<250){
+    const p=queue.shift(); const cell=game.board[p.r][p.c];
+    if(!cell || !cell.special) continue;
+    let extra=[];
+    if(cell.special==='row') extra=rowPositions(p.r);
+    if(cell.special==='col') extra=colPositions(p.c);
+    if(cell.special==='bomb') extra=areaPositions(p.r,p.c,1);
+    if(cell.special==='rainbow') extra=colorPositions(choice(COLORS).id);
+    if(cell.special==='bee') extra=[findBeeTarget() || {r:p.r,c:p.c}];
+    extra.forEach(x=>{ const k=x.r+','+x.c; if(!seen.has(k)){ seen.set(k,x); queue.push(x); } });
+  }
+  return [...seen.values()];
+}
+
+function shakeBoard(ms=220){
+  boardEl.classList.add('shake');
+  setTimeout(()=>boardEl.classList.remove('shake'), ms);
+}
+function spawnSparks(node, source='match'){
+  if(!node || !boardEl) return;
+  const icons = source==='rainbow' ? ['🌈','✨','⭐','💎'] : source==='rocket' ? ['💥','✨','🍬'] : ['✨','⭐'];
+  const rect = node.getBoundingClientRect();
+  const parent = boardEl.getBoundingClientRect();
+  for(let i=0;i<5;i++){
+    const sp=document.createElement('span');
+    sp.className='spark';
+    sp.textContent=choice(icons);
+    sp.style.left=(rect.left-parent.left+rect.width/2-8)+'px';
+    sp.style.top=(rect.top-parent.top+rect.height/2-8)+'px';
+    sp.style.setProperty('--dx', (Math.random()*80-40)+'px');
+    sp.style.setProperty('--dy', (Math.random()*-80-20)+'px');
+    boardEl.appendChild(sp);
+    setTimeout(()=>sp.remove(),760);
+  }
+}
+
+async function clearPositions(positions, source){
+  if(!positions || !positions.length) return 0;
+  const unique = [...new Map(positions.filter(p=>p && inBoard(p.r,p.c)).map(p=>[p.r+','+p.c,p])).values()];
+  if(!unique.length) return 0;
+  unique.forEach(p=>{
+    const i=p.r*SIZE+p.c;
+    const node = boardEl.children[i];
+    if(node){ node.classList.add(source==='rocket' || source==='rainbow' ? 'superPulse' : 'clearing'); spawnSparks(node, source); }
+  });
+  if(['rocket','tool','rainbow','lucky'].includes(source)){ shakeBoard(source==='rainbow' || unique.length>18 ? 260 : 180); }
+  beep(source==='rocket'||source==='tool'||source==='rainbow'?'boom':'match');
+  await delay(source==='rainbow'?230:170);
+  let cleared=0;
+  unique.forEach(p=>{ if(clearCell(p.r,p.c,source)) cleared++; });
+  if(cleared>=6) word(choice(PRAISES));
+  renderAll();
+  return cleared;
+}
+function clearCell(r,c,source){
+  const cell = game.board[r][c];
+  if(!cell) return false;
+  if(cell.blocker){ damageBlocker(r,c); return false; }
+  if(!cell.c && !cell.key) return false;
+  const color = cell.c;
+  if(color && color!=='rainbow') updateColorTargets(color);
+  if(cell.key) updateKeyTarget();
+  cell.c = null; cell.special = null; cell.key = false;
+  game.score += Math.round((source==='tool'?80:60) * Math.max(1,game.combo) * (source==='rocket'?1.2:1));
+  damageBoss(source==='match'?3:8);
+  damageAdjacent(r,c);
+  return true;
+}
+function damageBlocker(r,c){
+  const cell = game.board[r][c]; if(!cell.blocker) return;
+  cell.hp--;
+  game.score += 40;
+  if(cell.hp<=0){
+    const type = cell.blocker;
+    cell.blocker=null; cell.hp=0;
+    updateBlockerTargets(type);
+    game.score += 110;
+    damageBoss(5);
+  }
+}
+function damageAdjacent(r,c){
+  [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dr,dc])=>{
+    const nr=r+dr,nc=c+dc;
+    if(inBoard(nr,nc) && game.board[nr][nc].blocker && ['box','vine','honey'].includes(game.board[nr][nc].blocker)) damageBlocker(nr,nc);
+  });
+}
+function updateColorTargets(color){ game.def.targets.forEach(t=>{ if(t.kind==='color' && t.color===color && t.got<t.need) t.got++; }); }
+function updateBlockerTargets(type){ game.def.targets.forEach(t=>{ if(t.kind==='blocker' && t.blocker===type && t.got<t.need) t.got++; }); }
+function updateKeyTarget(){ game.def.targets.forEach(t=>{ if(t.kind==='key' && t.got<t.need) t.got++; }); }
+function damageBoss(n){ if(game.bossHp>0){ game.bossHp = Math.max(0, game.bossHp-n); } }
+function inBoard(r,c){ return r>=0 && r<SIZE && c>=0 && c<SIZE; }
+function rowPositions(r){ return Array.from({length:SIZE},(_,c)=>({r,c})); }
+function colPositions(c){ return Array.from({length:SIZE},(_,r)=>({r,c})); }
+function areaPositions(r,c,rad){ const arr=[]; for(let dr=-rad;dr<=rad;dr++)for(let dc=-rad;dc<=rad;dc++) if(inBoard(r+dr,c+dc)) arr.push({r:r+dr,c:c+dc}); return arr; }
+function allPositions(){ const arr=[]; for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++)arr.push({r,c}); return arr; }
+function randomCandySpot(){
+  const spots = allPositions().filter(p=>game.board[p.r][p.c].c && !game.board[p.r][p.c].blocker);
+  return spots.length ? choice(spots) : {r:rnd(SIZE),c:rnd(SIZE)};
+}
+
+function colorPositions(color){ const arr=[]; for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++) if(game.board[r][c].c===color) arr.push({r,c}); return arr; }
+async function clearColor(color){ await clearPositions(colorPositions(color),'rainbow'); }
+async function resolveAfterClear(lastSwap=null){
+  await dropAndFill();
+  await collectBottomKeys();
+  await resolveCascade(lastSwap);
+}
+
+function findBeeTarget(){
+  const blockers = allPositions().filter(p=>game.board[p.r][p.c].blocker);
+  if(blockers.length) return choice(blockers);
+  const colorTarget = game.def.targets.find(t=>t.kind==='color' && !targetDone(t));
+  if(colorTarget){ const p = colorPositions(colorTarget.color); if(p.length) return choice(p); }
+  return choice(allPositions());
+}
+async function dropAndFill(){
+  for(let c=0;c<SIZE;c++){
+    let write=SIZE-1;
+    for(let r=SIZE-1;r>=0;r--){
+      const src=game.board[r][c];
+      if(src.c!==null || src.key){
+        if(write!==r){
+          const dst=game.board[write][c];
+          dst.c=src.c; dst.special=src.special; dst.key=src.key;
+          src.c=null; src.special=null; src.key=false;
+        }
+        write--;
+      }
+    }
+    for(let r=write;r>=0;r--){
+      const cell=game.board[r][c];
+      cell.c=choice(COLORS).id; cell.special=null; cell.key=false;
+    }
+  }
+  renderBoard(); await delay(120);
+}
+async function collectBottomKeys(){
+  let any=false;
+  for(let c=0;c<SIZE;c++){
+    const cell=game.board[SIZE-1][c];
+    if(cell.key){ updateKeyTarget(); cell.key=false; cell.c=null; cell.special=null; game.score+=500; any=true; }
+  }
+  if(any){ word('🗝️ 钥匙到达出口！'); beep('reward'); await dropAndFill(); }
+}
+function maybeGrowVines(){
+  if(game.level<11 || game.moves%4!==0) return;
+  const vines=[]; allPositions().forEach(p=>{ if(game.board[p.r][p.c].blocker==='vine') vines.push(p); });
+  if(!vines.length) return;
+  const base=choice(vines); const around=areaPositions(base.r,base.c,1).filter(p=>!game.board[p.r][p.c].blocker);
+  if(around.length && Math.random()<.55){ const p=choice(around); game.board[p.r][p.c].blocker='vine'; game.board[p.r][p.c].hp=1; }
+}
+function triggerReverseGoal(){
+  game.reverseTriggered=true;
+  const color = choice(COLORS).id;
+  game.def.targets.push({kind:'color', color, need:8+Math.floor(game.level/2), got:0});
+  word('剧情反转：新目标出现！');
+}
+function specialEffectPositions(p, special){
+  if(!p || !inBoard(p.r,p.c)) return [];
+  if(special==='row') return rowPositions(p.r);
+  if(special==='col') return colPositions(p.c);
+  if(special==='bomb') return areaPositions(p.r,p.c,1);
+  if(special==='bee') return [findBeeTarget() || p];
+  if(special==='rainbow') return allPositions();
+  return [p];
+}
+function sameColorCandyPositions(color){
+  return colorPositions(color).filter(p=>{
+    const cell=game.board[p.r][p.c];
+    return cell && cell.c===color && !cell.blocker;
+  });
+}
+async function transformSameColorAndBlast(color, specialType, rainbowPos, otherPos){
+  const targets = sameColorCandyPositions(color);
+  targets.forEach((p,i)=>{
+    const cell=game.board[p.r][p.c];
+    if(!cell || cell.blocker) return;
+    cell.special = specialType==='rocket' ? (i%2?'row':'col') : 'bomb';
+  });
+  renderBoard();
+  word(specialType==='rocket' ? '同色全部变火箭！' : '同色全部变炸弹！');
+  beep('reward');
+  await delay(420);
+  let pos=[];
+  targets.forEach(p=>{
+    const cell=game.board[p.r][p.c];
+    const sp = specialType==='rocket' ? (cell.special || 'row') : 'bomb';
+    pos = pos.concat(specialEffectPositions(p, sp));
+  });
+  pos = pos.concat(targets, [rainbowPos, otherPos]);
+  await clearPositions(pos, specialType==='rocket'?'rocket':'rainbow');
+}
+async function triggerCombo(a,b,sa,sb){
+  const cellA = game.board[a.r][a.c];
+  const cellB = game.board[b.r][b.c];
+  const sA = cellA.special;
+  const sB = cellB.special;
+  let pos=[];
+
+  if(sA==='rainbow' && sB==='rainbow'){
+    word('双彩虹全屏清除！');
+    await clearPositions(allPositions(), 'rainbow');
+    return;
+  }
+
+  if(sA==='rainbow' || sB==='rainbow'){
+    const rainbowPos = sA==='rainbow' ? a : b;
+    const otherPos = sA==='rainbow' ? b : a;
+    const other = game.board[otherPos.r][otherPos.c];
+    const color = other.c && other.c!=='rainbow' ? other.c : choice(COLORS).id;
+    if(other.special==='row' || other.special==='col'){
+      await transformSameColorAndBlast(color, 'rocket', rainbowPos, otherPos);
+      addDaily('rocket2');
+      return;
+    }
+    if(other.special==='bomb'){
+      await transformSameColorAndBlast(color, 'bomb', rainbowPos, otherPos);
+      return;
+    }
+    if(other.special==='bee'){
+      const targets=sameColorCandyPositions(color).slice(0,8);
+      pos=[rainbowPos, otherPos];
+      targets.forEach(()=>pos.push(findBeeTarget() || randomCandySpot()));
+      word('彩虹蜜蜂救援！');
+      await clearPositions(pos,'rainbow');
+      return;
+    }
+    word(`${COLOR_MAP[color]?.name || '同色'} 全部消除！`);
+    await clearPositions(colorPositions(color).concat([rainbowPos, otherPos]), 'rainbow');
+    return;
+  }
+
+  const pair = [sA,sB].sort().join('+');
+  if(pair==='bomb+bomb'){
+    pos=areaPositions(a.r,a.c,2).concat(areaPositions(b.r,b.c,2));
+    word('双炸弹大爆炸！');
+  }else if(pair.includes('bomb') && (pair.includes('row') || pair.includes('col'))){
+    const center = sA==='bomb' ? a : b;
+    for(let rr=center.r-1; rr<=center.r+1; rr++) if(inBoard(rr,0)) pos=pos.concat(rowPositions(rr));
+    for(let cc=center.c-1; cc<=center.c+1; cc++) if(inBoard(0,cc)) pos=pos.concat(colPositions(cc));
+    word('火箭炸弹：三行三列！');
+    addDaily('rocket2');
+  }else if((sA==='row'||sA==='col') && (sB==='row'||sB==='col')){
+    pos=rowPositions(a.r).concat(colPositions(a.c),rowPositions(b.r),colPositions(b.c));
+    word('交叉火箭！');
+    addDaily('rocket2');
+  }else if(pair.includes('bee')){
+    pos=[a,b,findBeeTarget(),findBeeTarget(),findBeeTarget()].filter(Boolean);
+    word('小蜜蜂精准救援！');
+  }else{
+    pos=areaPositions(a.r,a.c,1).concat(areaPositions(b.r,b.c,1));
+    word('超级组合！');
+  }
+  await clearPositions(pos.concat([a,b]), 'rocket');
+}
+
+async function afterAction(){
+  maybePraise();
+  renderAll();
+  if(checkWin()) return winLevel();
+  if(game.moves<=0) return loseLevel();
+}
+function checkWin(){ return game.def.targets.every(targetDone); }
+function starCount(){
+  if(!checkWin()) return 0;
+  let stars=1;
+  const scoreNeed = Math.max(1200, (game.def.targets.find(t=>t.kind==='score')?.need) || (1500+game.level*550));
+  if(game.score >= scoreNeed*1.12 || game.moves>=5) stars=2;
+  if(game.score >= scoreNeed*1.45 || game.moves>=8 || game.maxCombo>=8) stars=3;
+  return stars;
+}
+function winLevel(){
+  if(game.over) return; game.over=true; busy=false;
+  const stars=starCount();
+  const bonus = (50+game.level*12) * stars * (game.def.lucky?2:1);
+  meta.coins += bonus;
+  meta.stars += stars;
+  meta.streak += 1;
+  meta.level = Math.min(MAX_LEVEL, Math.max(meta.level, game.level+1));
+  meta.unlocked = Math.max(meta.unlocked, Math.min(MAX_LEVEL, game.level+1));
+  const old = meta.best[game.level];
+  if(!old || game.score>old.score || stars>old.stars) meta.best[game.level] = {score:game.score,stars,maxCombo:game.maxCombo};
+  if(meta.streak===3){ meta.inventory.hammer++; showToast('连胜3关：小锤子 +1'); }
+  if(meta.streak===5){ meta.inventory.rainbow++; showToast('连胜5关：彩虹球 +1'); }
+  if(meta.streak===10){ meta.inventory.lucky++; showToast('连胜10关：幸运盲盒 +1'); }
+  addDaily('play3'); if(stars>=3) addDaily('star3');
+  saveMeta(); beep('win'); renderAll();
+  showWinModal(stars,bonus);
+}
+function loseLevel(){
+  if(game.over) return; game.over=true; busy=false;
+  meta.streak=0; saveMeta(); beep('fail'); renderAll();
+  modal(`<h2>差一点就过了</h2><p>第 ${game.level} 关失败。当前分数：<b>${game.score}</b>，最大连击：<b>${game.maxCombo}</b>。</p><div class="modalBtns"><button class="btn primary" id="retryModal">重新挑战</button><button class="btn warn" id="buyMoves">用 120 金币加 5 步</button><button class="btn" id="closeModal">回到棋盘</button></div>`);
+  el('retryModal').onclick=()=>{ closeModal(); startLevel(game.level); };
+  el('buyMoves').onclick=()=>{ if(meta.coins>=120){ meta.coins-=120; game.moves=5; game.over=false; saveMeta(); closeModal(); renderAll(); showToast('已购买 5 步。'); } else showToast('金币不够。'); };
+  el('closeModal').onclick=closeModal;
+}
+function showWinModal(stars,bonus){
+  const title = game.maxCombo>=15?'神级连击大师':game.maxCombo>=8?'糖果爆破王':stars>=3?'三星通关王':'星糖冒险家';
+  const share = `我刚在《星糖大冒险》第${game.level}关拿到${stars}星，分数${game.score}，最大${game.maxCombo}连击。你能超过我吗？`;
+  modal(`
+    <h2>通关成功！ ${'⭐'.repeat(stars)}</h2>
+    <div class="shareCard" id="shareCard">
+      <h2>🍬 星糖成绩卡</h2>
+      <p><b>${title}</b></p>
+      <div class="shareStats">
+        <div class="shareStat">关卡：${game.level}</div>
+        <div class="shareStat">星级：${'⭐'.repeat(stars)}</div>
+        <div class="shareStat">分数：${game.score}</div>
+        <div class="shareStat">最大连击：${game.maxCombo}</div>
+      </div>
+      <p>${choice(PRAISES)}</p>
+      <p class="tiny">${share}</p>
+    </div>
+    <p>获得金币：<b>${bonus}</b>　获得星星：<b>${stars}</b></p>
+    <div class="modalBtns">
+      <button class="btn primary" id="nextLevel">下一关</button>
+      <button class="btn" id="copyShare">复制分享文案</button>
+      <button class="btn warn" id="townAfter">去小镇</button>
+      <button class="btn" id="closeModal">关闭</button>
+    </div>`);
+  el('nextLevel').onclick=()=>{ closeModal(); startLevel(Math.min(MAX_LEVEL,game.level+1)); };
+  el('copyShare').onclick=()=>copyText(share);
+  el('townAfter').onclick=()=>showTownModal();
+  el('closeModal').onclick=closeModal;
+}
+
+function modal(html){ modalBox.innerHTML=html; modalMask.classList.remove('hidden'); }
+function closeModal(){ modalMask.classList.add('hidden'); }
+function copyText(text){
+  if(navigator.clipboard) navigator.clipboard.writeText(text).then(()=>showToast('分享文案已复制。')).catch(()=>fallbackCopy(text));
+  else fallbackCopy(text);
+}
+function fallbackCopy(text){ const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); showToast('分享文案已复制。'); }
+function word(text){
+  const d=document.createElement('div'); d.className='floatingWords'; d.textContent=text; el('gameScreen').appendChild(d); setTimeout(()=>d.remove(),950);
+}
+function maybePraise(){
+  if(game.maxCombo>=5 && Date.now()-game.lastPraise>3000){ game.lastPraise=Date.now(); showToast(choice(PRAISES)); }
+}
+
+function hasPossibleMove(){
+  for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++){
+    const dirs=[[1,0],[0,1]];
+    for(const [dr,dc] of dirs){
+      const nr=r+dr,nc=c+dc; if(!inBoard(nr,nc)) continue;
+      swapCandy({r,c},{r:nr,c:nc}); const ok=findMatches().length>0; swapCandy({r,c},{r:nr,c:nc}); if(ok) return true;
+    }
+  }
+  return false;
+}
+function ensureMoveExists(){
+  let guard=0;
+  fillAnyHoles();
+  while((!hasPossibleMove() || findMatches().length) && guard++<40){
+    if(findMatches().length) removeInitialMatches();
+    if(!hasPossibleMove()) shuffleBoard(false);
+  }
+}
+function fillAnyHoles(){
+  allPositions().forEach(p=>{
+    const cell=game.board[p.r][p.c];
+    if(!cell.c && !cell.key){ cell.c=choice(COLORS).id; cell.special=null; }
+  });
+}
+function shuffleBoard(show=true){
+  const movable=[];
+  allPositions().forEach(p=>{ const cell=game.board[p.r][p.c]; if(cell.c){ movable.push({c:cell.c,special:cell.special,key:cell.key}); cell.c=null; cell.special=null; cell.key=false; } });
+  for(let i=movable.length-1;i>0;i--){ const j=rnd(i+1); [movable[i],movable[j]]=[movable[j],movable[i]]; }
+  let k=0; allPositions().forEach(p=>{ const cell=game.board[p.r][p.c]; const m=movable[k++]; if(m){ cell.c=m.c; cell.special=m.special; cell.key=m.key; } });
+  fillAnyHoles();
+  if(show) { removeInitialMatches(); ensureMoveExists(); renderBoard(); }
+}
+function clearHints(){
+  if(!game) return;
+  allPositions().forEach(p=>game.board[p.r][p.c].hint=false);
+  if(hintTimer) clearTimeout(hintTimer);
+}
+function showHint(){
+  if(!game || busy) return;
+  clearHints();
+  for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++){
+    for(const [dr,dc] of [[1,0],[0,1],[-1,0],[0,-1]]){
+      const nr=r+dr,nc=c+dc; if(!inBoard(nr,nc)) continue;
+      swapCandy({r,c},{r:nr,c:nc}); const ok=findMatches().length>0; swapCandy({r,c},{r:nr,c:nc});
+      if(ok){ game.board[r][c].hint=true; game.board[nr][nc].hint=true; renderBoard(); showToast('提示：试试交换闪光的两个棋子。'); hintTimer=setTimeout(()=>{clearHints(); renderBoard();},2600); return; }
+    }
+  }
+  showToast('没有可消除组合，已自动洗牌。'); shuffleBoard();
+}
+
+function pendingTownIncome(){
+  const now=Date.now();
+  const last=meta.lastTownIncome || now;
+  const hours=Math.min(12, Math.max(0,(now-last)/3600000));
+  return Math.floor(hours * townPower());
+}
+function townRank(){
+  const total = BUILDINGS.reduce((sum,b)=>sum+townLevel(b.id),0);
+  if(total>=20) return '梦幻糖果王国';
+  if(total>=12) return '彩虹小镇';
+  if(total>=6) return '甜蜜村庄';
+  return '刚起步的小镇';
+}
+function showTownModal(){
+  const income = pendingTownIncome();
+  let html = `<h2>🏡 糖果小镇</h2><p>这里不只是装饰：建筑升级后会产生金币，也适合截图分享。</p>`;
+  html += `<div class="townScene"><div class="townCard">等级：${townRank()}　收益：${townPower()} 金币/小时　待领取：${income}</div><div class="townBuildings">`;
+  BUILDINGS.forEach(b=>{
+    const lvl = townLevel(b.id);
+    const nextStar = b.cost + Math.max(0,lvl)*3;
+    const nextCoin = b.coins + Math.max(0,lvl)*220;
+    html += `<button class="townBuilding ${b.scene} ${lvl?'':'locked'} ${lvl>=3?'lvl3':lvl>=2?'lvl2':''}" data-build="${b.id}">
+      <div class="bico">${b.icon}</div>
+      <div>${b.name}</div>
+      <span class="lvl">${lvl ? 'Lv.'+lvl : '未解锁'}</span>
+      <div class="tiny">${lvl>=3?'满级':(lvl?`升级：${nextStar}⭐ + ${nextCoin}🪙`:`解锁：${b.cost}⭐ + ${b.coins}🪙`)}</div>
+    </button>`;
+  });
+  html += `</div></div><div class="townControls"><button class="btn primary" id="claimTown">领取小镇收益</button><button class="btn" id="copyTown">复制小镇名片</button><button class="btn" id="closeModal">关闭</button></div>`;
+  modal(html);
+  modalBox.querySelectorAll('[data-build]').forEach(btn=>btn.onclick=()=>upgradeBuilding(btn.dataset.build));
+  el('claimTown').onclick=claimTownIncome;
+  el('copyTown').onclick=()=>copyText(`我的《星糖大冒险》小镇是【${townRank()}】，已解锁 ${meta.town.length}/${BUILDINGS.length} 个建筑，总收益 ${townPower()} 金币/小时。你的小镇呢？`);
+  el('closeModal').onclick=closeModal;
+}
+function claimTownIncome(){
+  const income = pendingTownIncome();
+  if(income<=0){ showToast('暂时没有可领取收益。'); return; }
+  meta.coins += income;
+  meta.lastTownIncome = Date.now();
+  saveMeta(); beep('reward'); renderAll(); showToast(`领取小镇收益：${income} 金币`); showTownModal();
+}
+function upgradeBuilding(id){
+  const b=BUILDINGS.find(x=>x.id===id); if(!b) return;
+  if(!meta.townLevels) meta.townLevels={};
+  const lvl = townLevel(id);
+  if(lvl>=3){ showToast('这个建筑已经满级。'); return; }
+  const needStars = b.cost + lvl*3;
+  const needCoins = b.coins + lvl*220;
+  if(meta.stars<needStars){ showToast(`星星不够，需要 ${needStars}⭐。`); return; }
+  if(meta.coins<needCoins){ showToast(`金币不够，需要 ${needCoins}🪙。`); return; }
+  meta.stars -= needStars;
+  meta.coins -= needCoins;
+  if(!meta.town.includes(id)) meta.town.push(id);
+  meta.townLevels[id] = lvl+1;
+  if(lvl===0) showToast(`${b.icon} ${b.name} 已解锁！`);
+  else showToast(`${b.icon} ${b.name} 升到 Lv.${lvl+1}！`);
+  saveMeta(); beep('reward'); renderAll(); showTownModal();
+}
+function unlockBuilding(id){ upgradeBuilding(id); }
+function showDailyModal(){
+  let complete = taskInfo().every(t=>t.val>=t.need);
+  let html = `<h2>🎯 每日任务</h2><p>完成任务可以获得金币和道具奖励。</p>`;
+  taskInfo().forEach(t=>{ const v=Math.min(t.val,t.need); html += `<div class="task"><div>${v>=t.need?'✅':'🎯'} ${t.text} ${v}/${t.need}</div><div class="bar"><i style="width:${v/t.need*100}%"></i></div></div>`; });
+  html += `<div class="modalBtns"><button class="btn primary" id="claimDaily">领取奖励</button><button class="btn" id="closeModal">关闭</button></div>`;
+  modal(html);
+  el('claimDaily').disabled = !complete || meta.daily.claimed;
+  el('claimDaily').textContent = meta.daily.claimed ? '今日已领取' : (complete?'领取奖励':'任务未完成');
+  el('claimDaily').onclick=()=>{
+    if(complete && !meta.daily.claimed){ meta.daily.claimed=true; meta.coins+=300; meta.inventory.lucky++; saveMeta(); renderAll(); beep('reward'); showToast('获得 300 金币 + 幸运盲盒'); showDailyModal(); }
+  };
+  el('closeModal').onclick=closeModal;
+}
+
+function dev(action){
+  if(!game && !['coins','tools','unlock','town','mode'].includes(action)) startLevel(meta.level);
+  if(action==='coins') meta.coins += 100000;
+  if(action==='tools') Object.keys(meta.inventory).forEach(k=>meta.inventory[k]+=10);
+  if(action==='unlock') meta.unlocked=MAX_LEVEL;
+  if(action==='town'){ meta.town=BUILDINGS.map(b=>b.id); meta.townLevels=Object.fromEntries(BUILDINGS.map(b=>[b.id,3])); }
+  if(action==='mode') meta.mode = meta.mode==='normal' ? 'easy' : meta.mode==='easy' ? 'hard' : 'normal';
+  if(action==='win' && game){ game.def.targets.forEach(t=>{ if(t.kind==='score') game.score=t.need; else if(t.kind==='boss') game.bossHp=0; else t.got=t.need; }); winLevel(); }
+  if(action==='blast' && game){ busy=true; clearPositions(allPositions(),'rocket').then(()=>resolveAfterClear(null)).then(afterAction).finally(()=>busy=false); }
+  if(action==='rainbow' && game){ const p=randomCandySpot(); game.board[p.r][p.c].c='rainbow'; game.board[p.r][p.c].special='rainbow'; }
+  saveMeta(); renderAll(); showToast('DEV 已执行：'+action);
+}
+
+el('startBtn').onclick=()=>startLevel(1);
+el('continueBtn').onclick=()=>startLevel(meta.level||1);
+el('resetBtn').onclick=()=>{ if(confirm('确定清空本地存档吗？')){ localStorage.removeItem('starCandyQuestSave'); meta=loadMeta(); startLevel(1); } };
+el('soundBtn').onclick=()=>{ meta.sound=!meta.sound; saveMeta(); renderTop(); beep('click'); };
+el('retryBtn').onclick=()=>{ if(game) startLevel(game.level); };
+el('hintBtn').onclick=showHint;
+el('dailyBtn').onclick=showDailyModal;
+el('openTown').onclick=showTownModal;
+el('devBtn').onclick=()=>el('devPanel').classList.toggle('hidden');
+el('devPanel').addEventListener('click',e=>{ const a=e.target.dataset.dev; if(a) dev(a); });
+modalMask.addEventListener('click',e=>{ if(e.target===modalMask) closeModal(); });
+
+ensureDaily();
+renderTop(); renderLevels(); renderTownMini(); renderDaily();
+})();
+</script>
+</body>
+</html>
